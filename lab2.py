@@ -210,8 +210,9 @@ def bum(arr, r = 1):#разбрасывает цепи пружинки ввер
         return 0
 
 def spring(arrx, arry, n = 1, rbum = 1):
-    arrx = multisub(arrx, n)
-    arry = bum(multisub(arry, n), rbum)
+    al = np.arctan2(arry[len(arry) - 1] - arry[0], arrx[len(arrx) - 1] - arrx[0])
+    arrx = bum(multisub(arrx, n), rbum*np.cos(al))
+    arry = bum(multisub(arry, n), rbum* np.cos(al))
     return arrx, arry
 
 def centring(x, y):
@@ -293,7 +294,7 @@ ax5.set_ylabel('VYA')
 
 plt.subplots_adjust(wspace=0.3, hspace = 0.7)
 
-Alpha_V = np.arctan2(XB, YB) + np.pi
+Alpha_V = np.arctan2(XB-XA, YB-YA)
 
 #function for recounting the positions
 def anima(i):
@@ -301,15 +302,24 @@ def anima(i):
     #Prism.set_data(PrX, PrY)
     SpX, SpY = Circle(XSpr[i],YSpr[i], Phi[i], radius)
     Spr.set_data(SpX, SpY)
-    Beam.set_data([XBm[i], XA[i]], [YBm[i], YA[i]])
-
-
     x_arr, y_arr = [XBm[i], XA[i]], [YBm[i], YA[i]]
     x_arr, y_arr = centring(x_arr, y_arr)
     x_arr = np.array(x_arr)
     y_arr = np.array(y_arr)
-    RotX, RotY = Rot2D(x_arr, y_arr, Alpha_V[i])
-    x, y = spring([XBm[i], XA[i]], [YBm[i], YA[i]], 3, 1)
+    if(i>0):
+        RotYA = YA[i] - YA[i-1]
+        RotYB = YBm[i] - YBm[i-1]
+        RotXA = XA[i] - XA[i - 1]
+        RotXB = XBm[i] - XBm[i - 1]
+    else:
+        RotYA = RotYB = RotXA = RotXB = 0
+
+
+    #Beam.set_data(spring([XBm[0] + RotXB, XA[0] + RotXA], [YBm[0] + RotYB, YA[0] + RotYA], 2, 1))
+
+
+
+    x, y = spring([XBm[i], XA[i]], [YBm[i], YA[i]], 3, 2)
     #x, y = spring([XBm[i] , (XBm[i] + XA[i])/2, XA[i]], [YBm[i] , (YBm[i] + YA[i])/2, YA[i] ], 1, 10)
 
     x[0] = XBm[i]
@@ -324,7 +334,7 @@ def anima(i):
 
 
     Point.set_data(XA[i]+r*np.cos(varphi), YA[i]+r*np.sin(varphi))
-    return Spr, Beam, Point, Chain
+    return Spr, Point, Chain#, Beam
 
 # animation function
 anim = FuncAnimation(fig, anima, frames=1000, interval=10, blit=True)

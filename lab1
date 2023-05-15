@@ -1,0 +1,92 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import sympy as sp
+
+def Rot2D(X,Y,Alpha):
+    RotX = X*np.cos(Alpha) - Y*np.sin(Alpha)
+    RotY = X*np.sin(Alpha) + Y*np.cos(Alpha)
+    return RotX, RotY
+
+def RotX(X,Y, Alpha):
+    RotXX = X*np.cos(Alpha) - Y*np.sin(Alpha)
+    return RotXX
+
+def RotY(X, Y,Alpha):
+    RotYY = X*np.sin(Alpha) + Y*np.cos(Alpha)
+    return RotYY
+
+t = sp.Symbol('t')
+r = 1 + sp.sin(t)
+phi = t
+#r = 2 + sp.sin(6*t)
+#phi = 6.5*t + 1.2*sp.cos(6*t)
+x = r*sp.cos(phi)
+y = r*sp.sin(phi)
+Vx = sp.diff(x,t)
+Vy = sp.diff(y,t)
+Ax = sp.diff(Vx,t)
+Ay = sp.diff(Vy,t)
+
+F_x = sp.lambdify(t, x)
+F_y = sp.lambdify(t, y)
+F_Vx = sp.lambdify(t, Vx)
+F_Vy = sp.lambdify(t, Vy)
+F_Ax = sp.lambdify(t, Ax)
+F_Ay = sp.lambdify(t, Ay)
+
+t = np.linspace(0,40,1001)
+
+x = F_x(t)
+y = F_y(t)
+Vx = F_Vx(t)
+Vy = F_Vy(t)
+Ax = F_Ax(t)
+Ay = F_Ay(t)
+
+Alpha_V = np.arctan2(Vy,Vx)
+
+fig = plt.figure(figsize=[10, 10])
+ax = fig.add_subplot(111)
+ax.axis('equal')
+ax.set(xlim=[-5, 5],ylim=[-5, 5])
+
+k_V = 0.5
+
+ax.plot(x,y)
+P = ax.plot(x[0],y[0],marker='o')[0]
+V_line = ax.plot([x[0], x[0]+k_V*Vx[0]],[y[0], y[0]+k_V*Vy[0]],color=[1,0,0])[0]
+A_line = ax.plot([x[0], x[0]+k_V*Ax[0]],[y[0], y[0]+k_V*Ay[0]],color=[0,0,1])[0]
+R_line = ax.plot([x[0], x[0]+k_V*Ax[0]],[y[0], y[0]+k_V*Ay[0]],color=[0,1,1])[0]
+
+a=0.1
+b=0.03
+x_arr = np.array([-a, 0, -a])
+y_arr = np.array([b, 0, -b])
+RotX, RotY = Rot2D(x_arr,y_arr,Alpha_V[0])
+V_Arrow = ax.plot(x[0]+k_V*Vx[0] + RotX, y[0]+k_V*Vy[0] + RotY,color=[1,0,0])[0]
+
+x1_arr = np.array([0, 1])
+y1_arr = np.array([0, 0])
+RotX, RotY = Rot2D(x1_arr, y1_arr, Alpha_V[0] + np.pi/2)
+R_Arrow = ax.plot(x[0] + RotX, y[0] + RotY,color=[0,0,0])[0]
+
+
+
+def TheMagicOfThtMovement(i):
+    P.set_data(x[i], y[i])
+    V_line.set_data([x[i], x[i]+k_V*Vx[i]], [y[i], y[i]+k_V*Vy[i]])
+    A_line.set_data([x[i], x[i] + k_V * Ax[i]], [y[i], y[i] + k_V * Ay[i]])
+
+    RX, RY = Rot2D(x[i]*Vx[i], y[i]*Vy[i], np.arctan2(y[i]*Vy[i], x[i]*Vx[i]) + np.pi/2)
+    #R_line.set_data([x[i], RX], [y[i], RY])
+    R_Arrow.set_data([x[i], x[i] + k_V * Vx[i]*np.cos(np.pi/2)], [y[i], y[i] + k_V * Vy[i]*np.sin(np.pi/2)])
+
+    RotX, RotY = Rot2D(x_arr, y_arr, Alpha_V[i])
+
+    V_Arrow.set_data(x[i]+k_V*Vx[i] + RotX, y[i]+k_V*Vy[i] + RotY)
+    return [P, V_line, V_Arrow, A_line, R_line]
+
+kino = FuncAnimation(fig,TheMagicOfThtMovement, frames=len(t), interval=20)
+
+plt.show()
